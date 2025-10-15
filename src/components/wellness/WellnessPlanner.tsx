@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { useUser, useFirestore, useFirebase } from '@/firebase';
+import { useFirestore, useFirebase } from '@/firebase';
 import {
   collection,
   onSnapshot,
@@ -32,15 +32,15 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
-  const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { firebaseApp } = useFirebase();
   const appId = firebaseApp?.options.appId;
 
   const collectionPath = useMemo(() => {
-    if (!user || !appId) return null;
-    return `artifacts/${appId}/users/${user.uid}/wellness_plans`;
-  }, [user, appId]);
+    // Since there's no login, we'll use a static path for a single-user experience.
+    if (!appId) return null;
+    return `artifacts/${appId}/users/anonymous-user/wellness_plans`;
+  }, [appId]);
 
   useEffect(() => {
     if (!collectionPath || !firestore) return;
@@ -156,22 +156,6 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
 
   const workoutPlans = plans.filter((p) => p.type === 'workout');
   const dietPlans = plans.filter((p) => p.type === 'diet');
-
-  if (userLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Please sign in to use the wellness planner.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto max-w-6xl p-4 md:p-8">
