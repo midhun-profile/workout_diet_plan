@@ -5,6 +5,10 @@
       "description": "Represents a user of the application.",
       "type": "object",
       "properties": {
+        "uid": {
+            "type": "string",
+            "description": "The user's unique ID from Firebase Auth."
+        },
         "name": {
           "type": "string",
           "description": "The user's full name."
@@ -15,11 +19,11 @@
           "description": "The user's email address."
         }
       },
-      "required": ["name", "email"]
+      "required": ["uid", "name", "email"]
     }
   },
   "auth": {
-    "providers": []
+    "providers": ["email"]
   },
   "firestore": {
     "/users/{userId}": {

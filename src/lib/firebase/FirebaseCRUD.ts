@@ -6,21 +6,30 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  setDoc,
   type DocumentData,
+  type Firestore,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase/firebase';
 
 // 🔹 CREATE
-export const addUser = async (user: DocumentData) => {
+export const addUser = async (db: Firestore, user: DocumentData) => {
   try {
-    await addDoc(collection(db, 'users'), user);
+    // We are using the user's UID as the document ID
+    if (user.uid) {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, user, { merge: true });
+    } else {
+      // This case might not be ideal if UID is always expected.
+      // Consider logging an error or handling it based on requirements.
+      await addDoc(collection(db, 'users'), user);
+    }
   } catch (e) {
     console.error('Error adding document: ', e);
   }
 };
 
 // 🔹 READ
-export const getUsers = async () => {
+export const getUsers = async (db: Firestore) => {
   try {
     const querySnapshot = await getDocs(collection(db, 'users'));
     const users: DocumentData[] = [];
@@ -34,7 +43,11 @@ export const getUsers = async () => {
 };
 
 // 🔹 UPDATE
-export const updateUser = async (id: string, updatedData: DocumentData) => {
+export const updateUser = async (
+  db: Firestore,
+  id: string,
+  updatedData: DocumentData
+) => {
   try {
     const userDoc = doc(db, 'users', id);
     await updateDoc(userDoc, updatedData);
@@ -44,7 +57,7 @@ export const updateUser = async (id: string, updatedData: DocumentData) => {
 };
 
 // 🔹 DELETE
-export const deleteUser = async (id: string) => {
+export const deleteUser = async (db: Firestore, id: string) => {
   try {
     const userDoc = doc(db, 'users', id);
     await deleteDoc(userDoc);

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser, useFirestore } from '@/firebase';
 import {
   addUser,
   getUsers,
@@ -46,33 +48,50 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import type { DocumentData } from 'firebase/firestore';
+import Loading from '@/app/loading';
 
 export default function UsersPage() {
+  const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
   const [users, setUsers] = useState<DocumentData[]>([]);
   const [newUser, setNewUser] = useState('');
   const [editingUser, setEditingUser] = useState<DocumentData | null>(null);
   const [updatedName, setUpdatedName] = useState('');
 
   const fetchUsers = async () => {
-    const allUsers = (await getUsers()) || [];
+    if (!firestore) return;
+    const allUsers = (await getUsers(firestore)) || [];
     setUsers(allUsers);
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (!userLoading && !user) {
+      router.push('/');
+    }
+  }, [user, userLoading, router]);
+
+  useEffect(() => {
+    if (user && firestore) {
+      fetchUsers();
+    }
+  }, [user, firestore]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUser) return;
-    await addUser({ name: newUser, email: `user${Date.now()}@example.com` });
+    if (!newUser || !user || !firestore) return;
+    await addUser(firestore, {
+      name: newUser,
+      email: `user${Date.now()}@example.com`,
+      uid: user.uid,
+    });
     setNewUser('');
     fetchUsers();
   };
 
   const handleUpdate = async () => {
-    if (editingUser && updatedName) {
-      await updateUser(editingUser.id, { name: updatedName });
+    if (editingUser && updatedName && firestore) {
+      await updateUser(firestore, editingUser.id, { name: updatedName });
       fetchUsers();
       setEditingUser(null);
       setUpdatedName('');
@@ -80,9 +99,14 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteUser(id);
+    if (!firestore) return;
+    await deleteUser(firestore, id);
     fetchUsers();
   };
+
+  if (userLoading || !user) {
+    return <Loading />;
+  }
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-16">
