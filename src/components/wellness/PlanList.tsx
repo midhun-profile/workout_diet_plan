@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, Edit, Download } from 'lucide-react';
+import { Trash2, Edit, Download, ArrowRight } from 'lucide-react';
 import type { Plan } from './WellnessPlanner';
 import {
     AlertDialog,
@@ -20,6 +20,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
+import Link from 'next/link';
 
 export function PlanList({
   title,
@@ -50,18 +51,14 @@ export function PlanList({
               <Card key={plan.id} className="flex flex-col">
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    {planType === 'workout' ? plan.exerciseName : `${plan.day} - ${plan.mealTime}`}
+                    {planType === 'workout' ? plan.dayName : `${plan.day} - ${plan.mealTime}`}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-2 text-sm">
                   {planType === 'workout' ? (
                     <>
-                      <p>
-                        <span className="font-semibold">Sets:</span> {plan.sets}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Reps/Duration:</span>{' '}
-                        {plan.repsDuration}
+                      <p className="text-muted-foreground">
+                        {plan.exercises?.length || 0} exercise(s) in this routine.
                       </p>
                     </>
                   ) : (
@@ -78,31 +75,38 @@ export function PlanList({
                   )}
                 </CardContent>
                 <div className="flex justify-end p-4 gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(plan)}>
-                    <Edit className="h-4 w-4 text-blue-500" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onDownload(plan)}>
-                    <Download className="h-4 w-4 text-green-500" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete this plan.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDelete(plan.id)}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  {planType === 'workout' && (
+                    <Button asChild variant="outline" size="sm">
+                       <Link href={`/workout/${plan.id}`}>View Routine <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                    </Button>
+                  )}
+                  <div className='ml-auto flex items-center'>
+                    <Button variant="ghost" size="icon" onClick={() => onEdit(plan)}>
+                        <Edit className="h-4 w-4 text-blue-500" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => onDownload(plan)}>
+                        <Download className="h-4 w-4 text-green-500" />
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this plan.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDelete(plan.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </Card>
             ))}

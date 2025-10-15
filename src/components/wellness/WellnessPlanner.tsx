@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { useFirestore, useFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import {
   collection,
   onSnapshot,
@@ -21,9 +21,17 @@ import { PlanList } from './PlanList';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+export type Exercise = {
+  exerciseName: string;
+  sets: number | string;
+  repsDuration: string;
+};
+
 export type Plan = {
   id: string;
   type: 'workout' | 'diet';
+  dayName?: string;
+  exercises?: Exercise[];
   [key: string]: any;
 };
 
@@ -33,17 +41,17 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const firestore = useFirestore();
-  const { firebaseApp } = useFirebase();
-  const appId = firebaseApp?.options.appId;
+  
+  // Using a static user ID for this single-user experience
+  const userId = 'anonymous-user';
+  const appId = 'wellness-planner-app'; // A static ID for the app
 
   const collectionPath = useMemo(() => {
-    // Since there's no login, we'll use a static path for a single-user experience.
-    if (!appId) return null;
-    return `artifacts/${appId}/users/anonymous-user/wellness_plans`;
-  }, [appId]);
+    return `artifacts/${appId}/users/${userId}/wellness_plans`;
+  }, [appId, userId]);
 
   useEffect(() => {
-    if (!collectionPath || !firestore) return;
+    if (!firestore) return;
 
     const q = query(collection(firestore, collectionPath));
     const unsubscribe = onSnapshot(
@@ -64,7 +72,7 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
   }, [collectionPath, firestore]);
 
   const handleAddPlan = async (planData: DocumentData) => {
-    if (!collectionPath || !firestore) return;
+    if (!firestore) return;
     try {
       await addDoc(collection(firestore, collectionPath), {
         ...planData,
@@ -77,7 +85,7 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
   };
 
   const handleUpdatePlan = async (planData: DocumentData) => {
-    if (!collectionPath || !firestore || !editingPlan) return;
+    if (!firestore || !editingPlan) return;
     try {
       const planDoc = doc(firestore, collectionPath, editingPlan.id);
       await updateDoc(planDoc, planData);
@@ -94,7 +102,7 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
   };
 
   const handleDeletePlan = async (planId: string) => {
-    if (!collectionPath || !firestore) return;
+    if (!firestore) return;
     try {
       await deleteDoc(doc(firestore, collectionPath, planId));
     } catch (error) {
@@ -109,13 +117,15 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
 
   const downloadPDF = (plan: Plan) => {
     const doc = new jsPDF();
-    doc.text(`${plan.type === 'workout' ? 'Workout' : 'Diet'} Plan`, 14, 16);
+    doc.text(`${plan.type === 'workout' ? 'Workout Routine' : 'Diet Plan'}`, 14, 16);
+
     if (plan.type === 'workout') {
-      (doc as any).autoTable({
-        startY: 20,
-        head: [['Exercise', 'Sets', 'Reps/Duration']],
-        body: [[plan.exerciseName, plan.sets, plan.repsDuration]],
-      });
+        doc.text(`Routine: ${plan.dayName}`, 14, 22);
+        (doc as any).autoTable({
+            startY: 30,
+            head: [['Exercise', 'Sets', 'Reps/Duration']],
+            body: plan.exercises?.map(ex => [ex.exerciseName, ex.sets, ex.repsDuration]),
+        });
     } else {
       (doc as any).autoTable({
         startY: 20,
@@ -132,12 +142,19 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
     
     const workoutPlans = plans.filter(p => p.type === 'workout');
     if (workoutPlans.length > 0) {
-      doc.text('Workout Plans', 14, 25);
-      (doc as any).autoTable({
-        startY: 30,
-        head: [['Exercise', 'Sets', 'Reps/Duration']],
-        body: workoutPlans.map(p => [p.exerciseName, p.sets, p.repsDuration]),
-      });
+      doc.text('Workout Routines', 14, 25);
+      let startY = 30;
+      workoutPlans.forEach(p => {
+        doc.text(`Routine: ${p.dayName}`, 14, startY);
+        startY += 5;
+        (doc as any).autoTable({
+            startY: startY,
+            head: [['Exercise', 'Sets', 'Reps/Duration']],
+            body: p.exercises?.map(ex => [ex.exerciseName, ex.sets, ex.repsDuration]),
+            theme: 'striped',
+        });
+        startY = (doc as any).lastAutoTable.finalY + 10;
+      })
     }
 
     const dietPlans = plans.filter(p => p.type === 'diet');
@@ -170,7 +187,7 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
       </div>
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'workout' | 'diet')} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="workout">Workout Plan</TabsTrigger>
+          <TabsTrigger value="workout">Workout Routines</TabsTrigger>
           <TabsTrigger value="diet">Diet Plan</TabsTrigger>
         </TabsList>
         <TabsContent value="workout">
@@ -194,7 +211,7 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
             />
         </TabsContent>
       </Tabs>
-      <div className="fixed bottom-8 right-8">
+      <div className="fixed bottom-8 right-8 z-50">
         <Button size="lg" className="rounded-full h-16 w-16" onClick={() => setIsModalOpen(true)}>
             <PlusCircle size={32} />
         </Button>
