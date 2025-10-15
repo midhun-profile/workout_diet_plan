@@ -6,7 +6,7 @@ import {
   getUsers,
   updateUser,
   deleteUser,
-} from '@/lib/firebase/crud';
+} from '@/lib/firebase/FirebaseCRUD';
 import { Button } from '@/components/ui/button';
 import {
   Card,
