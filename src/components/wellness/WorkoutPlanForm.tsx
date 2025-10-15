@@ -10,8 +10,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import type { Plan, Exercise } from './WellnessPlanner';
+import type { Plan } from './WellnessPlanner';
 import { PlusCircle, Trash2 } from 'lucide-react';
+
+export type Exercise = {
+  exerciseName: string;
+  sets: number | string;
+  repsDuration: string;
+};
 
 export function WorkoutPlanForm({
   plan,

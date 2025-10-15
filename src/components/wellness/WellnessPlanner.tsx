@@ -15,23 +15,21 @@ import {
   query,
 } from 'firebase/firestore';
 import { PlusCircle, Download } from 'lucide-react';
-import { WorkoutPlanForm } from './WorkoutPlanForm';
-import { DietPlanForm } from './DietPlanForm';
+import { WorkoutPlanForm, type Exercise } from './WorkoutPlanForm';
+import { DietPlanForm, type Meal } from './DietPlanForm';
 import { PlanList } from './PlanList';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-export type Exercise = {
-  exerciseName: string;
-  sets: number | string;
-  repsDuration: string;
-};
-
 export type Plan = {
   id: string;
   type: 'workout' | 'diet';
+  // Workout
   dayName?: string;
   exercises?: Exercise[];
+  // Diet
+  day?: string;
+  meals?: Meal[];
   [key: string]: any;
 };
 
@@ -117,7 +115,7 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
 
   const downloadPDF = (plan: Plan) => {
     const doc = new jsPDF();
-    doc.text(`${plan.type === 'workout' ? 'Workout Routine' : 'Diet Plan'}`, 14, 16);
+    doc.text(`${plan.type === 'workout' ? 'Workout Routine' : 'Daily Diet Plan'}`, 14, 16);
 
     if (plan.type === 'workout') {
         doc.text(`Routine: ${plan.dayName}`, 14, 22);
@@ -127,45 +125,56 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
             body: plan.exercises?.map(ex => [ex.exerciseName, ex.sets, ex.repsDuration]),
         });
     } else {
-      (doc as any).autoTable({
-        startY: 20,
-        head: [['Day', 'Meal Time', 'Description', 'Calories/Macros']],
-        body: [[plan.day, plan.mealTime, plan.description, plan.caloriesMacros]],
-      });
+        doc.text(`Day: ${plan.day}`, 14, 22);
+        (doc as any).autoTable({
+            startY: 30,
+            head: [['Meal Time', 'Description', 'Calories/Macros']],
+            body: plan.meals?.map(meal => [meal.mealTime, meal.description, meal.caloriesMacros]),
+        });
     }
     doc.save(`${plan.type}-plan-${plan.id}.pdf`);
   };
 
   const downloadAllPDFs = () => {
     const doc = new jsPDF();
-    doc.text('All Wellness Plans', 14, 16);
+    let finalY = 16;
+    doc.text('All Wellness Plans', 14, finalY);
     
     const workoutPlans = plans.filter(p => p.type === 'workout');
     if (workoutPlans.length > 0) {
-      doc.text('Workout Routines', 14, 25);
-      let startY = 30;
+        finalY += 9;
+      doc.text('Workout Routines', 14, finalY);
+      finalY += 5;
       workoutPlans.forEach(p => {
-        doc.text(`Routine: ${p.dayName}`, 14, startY);
-        startY += 5;
+        doc.text(`Routine: ${p.dayName}`, 14, finalY);
+        finalY += 5;
         (doc as any).autoTable({
-            startY: startY,
+            startY: finalY,
             head: [['Exercise', 'Sets', 'Reps/Duration']],
             body: p.exercises?.map(ex => [ex.exerciseName, ex.sets, ex.repsDuration]),
             theme: 'striped',
         });
-        startY = (doc as any).lastAutoTable.finalY + 10;
+        finalY = (doc as any).lastAutoTable.finalY + 10;
       })
     }
 
     const dietPlans = plans.filter(p => p.type === 'diet');
     if (dietPlans.length > 0) {
-      const workoutTableHeight = workoutPlans.length > 0 ? (doc as any).lastAutoTable.finalY : 20;
-      doc.text('Diet Plans', 14, workoutTableHeight + 10);
-      (doc as any).autoTable({
-        startY: workoutTableHeight + 15,
-        head: [['Day', 'Meal Time', 'Description', 'Calories/Macros']],
-        body: dietPlans.map(p => [p.day, p.mealTime, p.description, p.caloriesMacros]),
-      });
+      finalY = workoutPlans.length > 0 ? (doc as any).lastAutoTable.finalY : 20;
+      finalY += 10;
+      doc.text('Diet Plans', 14, finalY);
+       finalY += 5;
+       dietPlans.forEach(p => {
+        doc.text(`Day: ${p.day}`, 14, finalY);
+        finalY += 5;
+        (doc as any).autoTable({
+            startY: finalY,
+            head: [['Meal Time', 'Description', 'Calories/Macros']],
+            body: p.meals?.map(meal => [meal.mealTime, meal.description, meal.caloriesMacros]),
+            theme: 'striped',
+        });
+        finalY = (doc as any).lastAutoTable.finalY + 10;
+      })
     }
 
     doc.save('all-wellness-plans.pdf');
@@ -202,7 +211,7 @@ export function WellnessPlanner({ initialTab }: { initialTab: 'workout' | 'diet'
         </TabsContent>
         <TabsContent value="diet">
             <PlanList
-                title="Your Diet Plans"
+                title="Your Daily Diet Plans"
                 plans={dietPlans}
                 onEdit={handleEditPlan}
                 onDelete={handleDeletePlan}

@@ -51,36 +51,22 @@ export function PlanList({
               <Card key={plan.id} className="flex flex-col">
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    {planType === 'workout' ? plan.dayName : `${plan.day} - ${plan.mealTime}`}
+                    {planType === 'workout' ? plan.dayName : plan.day}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-2 text-sm">
-                  {planType === 'workout' ? (
-                    <>
-                      <p className="text-muted-foreground">
-                        {plan.exercises?.length || 0} exercise(s) in this routine.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p>
-                        <span className="font-semibold">Description:</span>{' '}
-                        {plan.description}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Calories/Macros:</span>{' '}
-                        {plan.caloriesMacros}
-                      </p>
-                    </>
-                  )}
+                   <p className="text-muted-foreground">
+                    {planType === 'workout'
+                      ? `${plan.exercises?.length || 0} exercise(s) in this routine.`
+                      : `${plan.meals?.length || 0} meal(s) in this day's plan.`
+                    }
+                  </p>
                 </CardContent>
-                <div className="flex justify-end p-4 gap-2">
-                  {planType === 'workout' && (
+                <div className="flex justify-between items-center p-4 gap-2">
                     <Button asChild variant="outline" size="sm">
-                       <Link href={`/workout/${plan.id}`}>View Routine <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                       <Link href={`/${planType}/${plan.id}`}>View Plan <ArrowRight className="ml-2 h-4 w-4" /></Link>
                     </Button>
-                  )}
-                  <div className='ml-auto flex items-center'>
+                  <div className='flex items-center'>
                     <Button variant="ghost" size="icon" onClick={() => onEdit(plan)}>
                         <Edit className="h-4 w-4 text-blue-500" />
                     </Button>
