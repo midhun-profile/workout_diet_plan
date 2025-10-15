@@ -2,7 +2,14 @@
 
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -47,6 +54,12 @@ export function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Navigation Menu</SheetTitle>
+                  <SheetDescription>
+                    Main navigation links for the application.
+                  </SheetDescription>
+                </SheetHeader>
                 <div className="flex flex-col gap-8 pt-10">
                   <Logo className="self-center" />
                   <NavLinks className="flex flex-col items-center gap-4 text-lg" />
