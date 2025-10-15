@@ -1,230 +1,76 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { useFirestore } from '@/firebase';
-import {
-  addUser,
-  getUsers,
-  updateUser,
-  deleteUser,
-} from '../lib/firebase/FirebaseCRUD';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Pencil, Trash2 } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import Loading from '@/app/loading';
-import { type DocumentData, type Firestore } from 'firebase/firestore';
+import { Dumbbell, Apple } from 'lucide-react';
+import Link from 'next/link';
 
-export default function UsersPage() {
-  const firestore = useFirestore();
-  const [users, setUsers] = useState<DocumentData[]>([]);
-  const [newUser, setNewUser] = useState('');
-  const [editingUser, setEditingUser] = useState<DocumentData | null>(null);
-  const [updatedName, setUpdatedName] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  const fetchUsers = async () => {
-    if (!firestore) return;
-    const allUsers = (await getUsers(firestore)) || [];
-    setUsers(allUsers);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (firestore) {
-      fetchUsers();
-    }
-  }, [firestore]);
-
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUser || !firestore) return;
-    await addUser(firestore, {
-      name: newUser,
-      email: `user${Date.now()}@example.com`,
-    });
-    setNewUser('');
-    fetchUsers();
-  };
-
-  const handleUpdate = async () => {
-    if (editingUser && updatedName && firestore) {
-      await updateUser(firestore, editingUser.id, { name: updatedName });
-      fetchUsers();
-      setEditingUser(null);
-      setUpdatedName('');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!firestore) return;
-    await deleteUser(firestore, id);
-    fetchUsers();
-  };
-
-  if (loading) {
-    return <Loading />;
-  }
-
+export default function HomePage() {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-16">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl font-headline">
-            Manage Users
-          </CardTitle>
-          <CardDescription>
-            A simple interface to create, read, update, and delete users.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAdd} className="flex gap-2 mb-6">
-            <Input
-              type="text"
-              placeholder="Enter name"
-              value={newUser}
-              onChange={(e) => setNewUser(e.target.value)}
-              className="flex-grow"
-            />
-            <Button type="submit">Add User</Button>
-          </form>
+      <div className="text-center mb-12">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 font-headline">
+          Health & Fitness Planner
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+          Your personal space to build workout routines and diet plans for a
+          healthier lifestyle.
+        </p>
+      </div>
 
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.length > 0 ? (
-                  users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell className="text-right">
-                        <Dialog
-                          onOpenChange={(open) => {
-                            if (!open) {
-                              setEditingUser(null);
-                              setUpdatedName('');
-                            }
-                          }}
-                        >
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setEditingUser(user);
-                                setUpdatedName(user.name);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Edit User</DialogTitle>
-                              <DialogDescription>
-                                Update the user's name below.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <Input
-                              value={updatedName}
-                              onChange={(e) => setUpdatedName(e.target.value)}
-                            />
-                            <DialogFooter>
-                              <Button
-                                variant="outline"
-                                onClick={() => setEditingUser(null)}
-                              >
-                                Cancel
-                              </Button>
-                              <Button onClick={handleUpdate}>
-                                Save Changes
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
+      <div className="grid md:grid-cols-2 gap-8">
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <Dumbbell className="text-primary" />
+              Workout Chart Creator
+            </CardTitle>
+            <CardDescription>
+              Design a personalized workout schedule to achieve your fitness
+              goals.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground">
+              Track your exercises, sets, reps, and rest periods to build a
+              comprehensive weekly routine.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild className="w-full">
+              <Link href="/workout-planner">Create Workout Plan</Link>
+            </Button>
+          </CardFooter>
+        </Card>
 
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Are you sure?
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will
-                                permanently delete the user.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(user.id)}
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center h-24">
-                      No users found.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <Apple className="text-primary" />
+              Diet Chart Creator
+            </CardTitle>
+            <CardDescription>
+              Create a balanced diet plan to complement your fitness journey.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground">
+              Plan your daily meals, track calories, and manage macronutrients
+              to stay on top of your nutrition.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild className="w-full">
+              <Link href="/diet-planner">Create Diet Plan</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
 }
