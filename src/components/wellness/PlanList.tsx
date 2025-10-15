@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit, Download } from 'lucide-react';
 import type { Plan } from './WellnessPlanner';
 import {
     AlertDialog,
@@ -24,12 +24,16 @@ import {
 export function PlanList({
   title,
   plans,
+  onEdit,
   onDelete,
+  onDownload,
   planType,
 }: {
   title: string;
   plans: Plan[];
+  onEdit: (plan: Plan) => void;
   onDelete: (id: string) => void;
+  onDownload: (plan: Plan) => void;
   planType: 'workout' | 'diet';
 }) {
   return (
@@ -73,7 +77,13 @@ export function PlanList({
                     </>
                   )}
                 </CardContent>
-                <div className="flex justify-end p-4">
+                <div className="flex justify-end p-4 gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(plan)}>
+                    <Edit className="h-4 w-4 text-blue-500" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onDownload(plan)}>
+                    <Download className="h-4 w-4 text-green-500" />
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon">

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,17 +10,29 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import type { Plan } from './WellnessPlanner';
+
 
 export function WorkoutPlanForm({
+  plan,
   onSubmit,
   onClose,
 }: {
+  plan?: Plan | null;
   onSubmit: (data: any) => void;
   onClose: () => void;
 }) {
   const [exerciseName, setExerciseName] = useState('');
   const [sets, setSets] = useState('');
   const [repsDuration, setRepsDuration] = useState('');
+
+  useEffect(() => {
+    if (plan) {
+      setExerciseName(plan.exerciseName || '');
+      setSets(plan.sets || '');
+      setRepsDuration(plan.repsDuration || '');
+    }
+  }, [plan]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +47,7 @@ export function WorkoutPlanForm({
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Workout Plan</DialogTitle>
+          <DialogTitle>{plan ? 'Edit' : 'Create'} Workout Plan</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
