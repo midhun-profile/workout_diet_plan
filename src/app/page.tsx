@@ -1,9 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useEffect, useState } from 'react';
+import { useFirestore } from '@/firebase';
+import {
+  addUser,
+  getUsers,
+  updateUser,
+  deleteUser,
+} from '../lib/firebase/FirebaseCRUD';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,76 +17,211 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import Link from 'next/link';
-import { useToast } from '@/hooks/use-toast';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Pencil, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import Loading from '@/app/loading';
+import { type DocumentData, type Firestore } from 'firebase/firestore';
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { auth } = useAuth();
-  const router = useRouter();
-  const { toast } = useToast();
+export default function UsersPage() {
+  const firestore = useFirestore();
+  const [users, setUsers] = useState<DocumentData[]>([]);
+  const [newUser, setNewUser] = useState('');
+  const [editingUser, setEditingUser] = useState<DocumentData | null>(null);
+  const [updatedName, setUpdatedName] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const fetchUsers = async () => {
+    if (!firestore) return;
+    const allUsers = (await getUsers(firestore)) || [];
+    setUsers(allUsers);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (firestore) {
+      fetchUsers();
+    }
+  }, [firestore]);
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) return;
-    setLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/users');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: error.message,
-      });
-      setLoading(false);
+    if (!newUser || !firestore) return;
+    await addUser(firestore, {
+      name: newUser,
+      email: `user${Date.now()}@example.com`,
+    });
+    setNewUser('');
+    fetchUsers();
+  };
+
+  const handleUpdate = async () => {
+    if (editingUser && updatedName && firestore) {
+      await updateUser(firestore, editingUser.id, { name: updatedName });
+      fetchUsers();
+      setEditingUser(null);
+      setUpdatedName('');
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!firestore) return;
+    await deleteUser(firestore, id);
+    fetchUsers();
+  };
+
+  if (loading) {
+    return <Loading />;
+  }
+
   return (
-    <div className="container mx-auto flex h-screen min-h-[700px] items-center justify-center -mt-16">
-      <Card className="w-full max-w-md">
+    <div className="container mx-auto max-w-4xl px-4 py-8 md:py-16">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-3xl font-headline">Welcome Back</CardTitle>
+          <CardTitle className="text-3xl font-headline">
+            Manage Users
+          </CardTitle>
           <CardDescription>
-            Enter your credentials to access your account.
+            A simple interface to create, read, update, and delete users.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="grid gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
-            </Button>
+          <form onSubmit={handleAdd} className="flex gap-2 mb-6">
+            <Input
+              type="text"
+              placeholder="Enter name"
+              value={newUser}
+              onChange={(e) => setNewUser(e.target.value)}
+              className="flex-grow"
+            />
+            <Button type="submit">Add User</Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className="underline">
-              Sign up
-            </Link>
+
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.length > 0 ? (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell className="text-right">
+                        <Dialog
+                          onOpenChange={(open) => {
+                            if (!open) {
+                              setEditingUser(null);
+                              setUpdatedName('');
+                            }
+                          }}
+                        >
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setEditingUser(user);
+                                setUpdatedName(user.name);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit User</DialogTitle>
+                              <DialogDescription>
+                                Update the user's name below.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <Input
+                              value={updatedName}
+                              onChange={(e) => setUpdatedName(e.target.value)}
+                            />
+                            <DialogFooter>
+                              <Button
+                                variant="outline"
+                                onClick={() => setEditingUser(null)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button onClick={handleUpdate}>
+                                Save Changes
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Are you sure?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the user.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(user.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24">
+                      No users found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>

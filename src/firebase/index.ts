@@ -6,10 +6,10 @@ import {
   useFirebaseApp,
   useFirestore,
   FirebaseProvider,
-  FirebaseClientProvider,
 } from './provider';
 
 import { useUser } from './auth/use-user';
+import { FirebaseClientProvider } from './client-provider';
 
 // Note: This is a barrel file (https://flaviocopes.com/typescript-barrel-files/),
 // re-exporting modules from other files. It's a common pattern in TypeScript projects

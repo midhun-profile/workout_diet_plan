@@ -6,7 +6,6 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  setDoc,
   type DocumentData,
   type Firestore,
 } from 'firebase/firestore';
@@ -14,15 +13,7 @@ import {
 // 🔹 CREATE
 export const addUser = async (db: Firestore, user: DocumentData) => {
   try {
-    // We are using the user's UID as the document ID
-    if (user.uid) {
-      const userRef = doc(db, 'users', user.uid);
-      await setDoc(userRef, user, { merge: true });
-    } else {
-      // This case might not be ideal if UID is always expected.
-      // Consider logging an error or handling it based on requirements.
-      await addDoc(collection(db, 'users'), user);
-    }
+    await addDoc(collection(db, 'users'), user);
   } catch (e) {
     console.error('Error adding document: ', e);
   }
