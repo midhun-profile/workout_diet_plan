@@ -1,3 +1,6 @@
+'use client';
+import React, { useEffect, useState } from "react";
+import { addUser, getUsers, updateUser, deleteUser } from "../lib/firebase/FirebaseCRUD";
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -6,90 +9,114 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Component, Layers3, Zap } from 'lucide-react';
-import Link from 'next/link';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Pencil, Trash2 } from 'lucide-react';
+import type { DocumentData } from 'firebase/firestore';
 
 export default function Home() {
-  return (
-    <div className="container mx-auto px-4 py-8 md:py-16">
-      <div className="flex flex-col items-center text-center gap-16">
-        <section>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4 font-headline">
-            Welcome to NextPlate
-          </h1>
-          <p className="max-w-2xl mx-auto text-lg text-muted-foreground">
-            Your starting point for building beautiful, responsive, and
-            performant Next.js applications with ease.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg">
-              <Link href="/about">Get Started</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View on GitHub
-              </a>
-            </Button>
-          </div>
-        </section>
+  const [users, setUsers] = useState<DocumentData[]>([]);
+  const [newUser, setNewUser] = useState("");
 
-        <section className="w-full max-w-5xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="text-left">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="bg-primary/10 p-3 rounded-full">
-                    <Layers3 className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle>Page Routing</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Effortless client-side routing with Next.js's App Router.
-                  Navigate between pages seamlessly.
-                </CardDescription>
-              </CardContent>
-            </Card>
-            <Card className="text-left">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="bg-primary/10 p-3 rounded-full">
-                    <Component className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle>Component Library</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Powered by shadcn/ui. A set of reusable, accessible, and
-                  beautifully designed components.
-                </CardDescription>
-              </CardContent>
-            </Card>
-            <Card className="text-left">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="bg-primary/10 p-3 rounded-full">
-                    <Zap className="h-6 w-6 text-primary" />
-                  </div>
-                  <CardTitle>Modern Styling</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Styled with Tailwind CSS for a consistent and modern look,
-                  easily customizable via CSS variables.
-                </CardDescription>
-              </CardContent>
-            </Card>
+  const fetchUsers = async () => {
+    const allUsers = (await getUsers()) || [];
+    setUsers(allUsers);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUser) return;
+    await addUser({ name: newUser, email: `user${Date.now()}@example.com` });
+    setNewUser("");
+    fetchUsers();
+  };
+
+  const handleUpdate = async (id: string) => {
+    const updatedName = prompt("Enter new name:");
+    if (updatedName) {
+      await updateUser(id, { name: updatedName });
+      fetchUsers();
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      await deleteUser(id);
+      fetchUsers();
+    }
+  };
+
+  return (
+    <div className="container mx-auto max-w-4xl px-4 py-8 md:py-16">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-3xl font-headline">
+            Firebase CRUD
+          </CardTitle>
+          <CardDescription>
+            A simple interface to manage users with Firebase.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAdd} className="flex gap-2 mb-6">
+            <Input
+              type="text"
+              placeholder="Enter name"
+              value={newUser}
+              onChange={(e) => setNewUser(e.target.value)}
+              className="flex-grow"
+            />
+            <Button type="submit">Add User</Button>
+          </form>
+
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.length > 0 ? (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                       <TableCell>{user.email}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleUpdate(user.id)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center h-24">
+                      No users found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
-        </section>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
